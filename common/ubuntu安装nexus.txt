@@ -1,0 +1,92 @@
+1安装Openjdk 8
+sudo apt install openjdk-8-jdk
+
+2.下载 Nexus
+https://www.sonatype.com/download-oss-sonatype
+
+官网传送门：https://help.sonatype.com/repomanager3/product-information/download
+
+3.创建文件夹
+sudo cd /opt/ && mkdir nexus &&cd nexus
+
+4.解压
+sudo tar -zxvf nexus-3.54.1-01-unix.tar.gz 
+
+5.重命名
+sudo mv nexus-3.54.1-01 /opt/nexus/nexus-3.54.1-01 
+sudo mv sonatype-work/ /opt/nexus/sonatype-work 
+
+6.启动 Nexus
+cd /opt/nexus/nexus-3.54.1-01/bin/
+sudo ./nexus run
+
+7.开启启动建立软连接
+
+sudo ln -s /opt/nexus/nexus-3.54.1-01/bin/nexus /etc/init.d/nexus
+
+8.修改Nexus权限
+
+sudo chmod 755 /etc/init.d/nexus  
+
+9.设置Nexus为系统服务：
+
+sudo update-rc.d nexus defaults
+
+10.验证是否可以运行服务
+
+sudo systemctl status nexus.service 
+
+● nexus.service - LSB: nexus
+     Loaded: loaded (/etc/init.d/nexus; generated)
+     Active: active (running) since Sun 2020-06-21 10:37:14 CST; 1min 57s ago
+       Docs: man:systemd-sysv-generator(8)
+    Process: 158628 ExecStart=/etc/init.d/nexus start (code=exited, status=0/SUCCESS)
+      Tasks: 68 (limit: 4485)
+     Memory: 1.4G
+     CGroup: /system.slice/nexus.service
+             └─158845 /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java -server -Dinstall4j.jvmDir=/usr/lib/jvm/java-8-openjdk-amd64/jre -Dexe4j.moduleName=/opt/ne>
+
+
+11.编写nexus.service文件
+
+cd /etc/systemd/system/
+sudo touch nexus.service
+
+[Unit]
+Description=nexus service
+After=network.target
+  
+[Service]
+Type=forking
+LimitNOFILE=65536
+ExecStart=/opt/nexus/nexus-3.54.1-01/bin/nexus start
+ExecStop=/opt/nexus/nexus-3.54.1-01/bin/nexus stop
+Restart=on-abort
+TimeoutSec=600
+  
+[Install]
+WantedBy=multi-user.target
+
+11.重新加载进程
+sudo systemctl daemon-reload
+
+12.设置 Nexus 开机自启动命令为
+sudo systemctl enable nexus.service
+
+13.修改启动JDK版本(可选)
+INSTALL4J_JAVA_HOME_OVERRIDE=xxx
+
+14.修改默认端口（可选）
+cd /opt/nexus/nexus-3.54.1-01/etc/
+
+vim nexus-default.properties
+
+默认端口8081
+application-port=8081
+
+
+修改nexus运行内存
+vim nexus.vmoptions
+
+15.开始使用
+浏览器输入http://ip:8081进入Nexus控制台页面

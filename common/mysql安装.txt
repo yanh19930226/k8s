@@ -1,0 +1,98 @@
+1.更新软件包列表索引：
+
+sudo apt update
+
+2.安装MySQL：
+
+sudo apt install mysql-server
+
+3.查看MySQL版本：
+
+mysql --version
+
+4.查看服务状态:
+
+service mysql status
+
+5.配置:
+mysql8.0root 用户默认通过 auth_socket 插件授权，而 auth_socket 插件通过 Unix socket 文件来验证所有连接到 localhost 的用户
+这意味着你不能以用户–密码的方式，登录root账户,通过指令以root身份登录,通过第三方程序是无法连接到数据库,配置密码方式以root身份登录
+将root对应的plugin由 auth_socket 改为 mysql_native_password 即使是mysql8.0也是，否则影响后续远程连接
+
+sudo mysql;
+use mysql;
+select user, host, plugin from user;
+
+#MySQL8.0必须先执行此步骤设置密码，MySQL5.7可以选择先安装下面的secure！！！
+alter user 'root'@'localhost' identified with mysql_native_password by '密码';
+flush privileges;
+exit;
+
+至此，可以不用输入sudo，通过密码的方式登录数据库：
+mysql -uroot -p
+
+6.增强数据库服务的安全性
+
+sudo mysql_secure_installation
+
+询问三个问题，并根据提供的答案来设置系统的安全性。
+
+是否关删除匿名测试用户的信息。
+是否禁止远程root登录。只允许本地登录root用户，并拒绝远程连接。
+是否删除 test 数据库。
+根据自身需求键入相应的y or n。
+
+最后输入 y ，重新加载特权表使上述配置生效。返回 All Done!，设置成功
+
+7.远程连接
+如何连接ubuntu服务器下的mysql数据库？
+
+修改配置文件：
+
+#MySQL8.0！！！
+sudo vim /etc/mysql/mysql.conf.d/mysqld.cnf 
+#MySQL5.7！！！
+sudo vim /etc/my.cnf
+
+找到 bind-address 那一行，初始值被赋为 127.0.0.1，代表只在本机可用，将其改为 0.0.0.0，代表全IP可用
+
+8.重启mysql服务：
+
+sudo service mysql restar
+
+9.登录mysql后执行：
+
+use mysql;
+update user set host='%' where user='root';
+flush privileges;
+
+#MySQL8.0执行这行
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' WITH GRANT OPTION;
+#MySQL5.7执行这行
+GRANT ALL PRIVILEGES ON *.* TO 'root'@'%' IDENTIFIED BY '密码' WITH GRANT OPTION;
+
+flush privileges;
+
+10.卸载:
+
+sudo apt purge mysql-* # mysql后用tab补全，把所有与mysql相关的卸载
+
+sudo rm -rf /etc/mysql/ /var/lib/mysql
+
+sudo apt autoremove
+
+sudo apt autoclean
+
+
+11.mysql 状态命令:
+
+systemctl status mysql
+systemctl stop mysql
+systemctl start mysql
+
+ ss -tln | grep 3306
+
+
+
+
+

@@ -1,0 +1,26 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+      type: app
+      version: 1.0.0
+  namespace: default
+spec:
+  containers:
+  - image: nginx:1.17.9
+    name: nginx
+    imagePullPolicy: IfNotPresent
+    workingDir: "/usr/share/nginx/html"
+    ports:
+    - name: nginx-port
+      containerPort: 80
+      protocol: TCP
+    resources:
+       requests:
+          cpu: 100m
+          memory: 200Mi
+        limits:
+           cpu: 100m
+           memory: 200Mi
+   restartPolicy: OnFailure

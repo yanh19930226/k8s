@@ -1,0 +1,33 @@
+1.安装
+apt-get install nfs-kernel-server
+2.创建目录
+mkdir -p /nfs/data
+3.分配最高权限
+chown -R nobody:nobody /nfs/data #待定
+chmod -R 777 /nfs/data
+4.编辑配置文件
+vim /etc/exports
+/nfs/data *(rw,sync,no_subtree_check,no_root_squash)
+
+说明：
+# 如果只允许一个客户端访问，可以只写一个客户端的IP地址
+/mnt/ShareFolder 192.168.43.131(rw,sync,no_subtree_check)
+# 如果只允许多个客户端访问，可以向如下一样写
+/mnt/ShareFolder 192.168.43.131(rw,sync,no_subtree_check)
+/mnt/ShareFolder 192.168.43.171(rw,sync,no_subtree_check)
+/mnt/ShareFolder 192.168.43.137(rw,sync,no_subtree_check)
+# 如果运行一个网段的客户端访问，可以这样写：
+/mnt/ShareFolder 192.168.43.*(rw,sync,no_subtree_check)
+或者
+/mnt/ShareFolder 192.168.43.0/24(rw,sync,no_subtree_check)
+5.重启
+exportfs -arv
+/etc/init.d/nfs-kernel-server restart
+6.查看
+showmount -e查看是否可以看到共享目录
+showmount -e 172.31.0.4(nfs 服务ip)
+
+客户端安装
+apt install nfs-common 
+mkdir -p /nfs/data
+mount 172.31.0.4:/nfs/data /nfs/data

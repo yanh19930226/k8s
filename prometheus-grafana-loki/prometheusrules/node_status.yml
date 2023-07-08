@@ -1,0 +1,94 @@
+groups:
+- name: Linux
+  rules:
+  - alert: 服务器
+    expr: up == 0
+    for: 10s  
+    labels:
+        severity: critical
+    annotations:
+      value: "机器 {{ $labels.instance }} 不可用"
+      description: "机器{{$labels.instance}} 不可用"     
+  - alert: "-内存报警"
+    expr: (node_memory_MemTotal_bytes - node_memory_MemAvailable_bytes) / node_memory_MemTotal_bytes * 100 > 70
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 内存资源利用率大于 70%"
+        value: "当前内存占用率{{ $value }}%"
+  - alert: "-CPU报警"
+    expr: 100 * (1 - avg(irate(node_cpu_seconds_total{mode="idle"}[2m])) by(instance)) > 60
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} CPU报警资源利用率大于 60%"
+        value: "当前CPU占用率{{ $value }}%"
+  - alert: "-磁盘报警"
+    expr: 100 * (node_filesystem_size_bytes{fstype=~"xfs|ext4"} - node_filesystem_avail_bytes) / node_filesystem_size_bytes > 80
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 磁盘报警资源利用率大于 80%，请及时扩容！"
+        value: "当前磁盘占用率{{ $value }}%"
+  - alert: "-磁盘读取报警"
+    expr: sum by (instance) (irate(node_disk_read_bytes_total{device=~"dm-*|sda|"}[2m])) > 1024 * 1024 * 100
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 磁盘读取大于 100MB/s"
+        value: "当前磁盘读取{{ $value }}MB/s"
+  - alert: "-磁盘写入报警"
+    expr: sum by (instance) (irate(node_disk_written_bytes_total{device=~"dm-*|sda|"}[2m])) > 1024 * 1024 * 100
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 磁盘写入大于 100MB/s"
+        value: "当前磁盘写入{{ $value }}MB/s"   
+  - alert: "-下载网络流量报警"
+    expr: ((sum(rate (node_network_receive_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr*|lo*'}[1m])) by (instance)) / 60 / 1024 / 2) > 200
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 最近1分钟使用下载流量每秒超过200Mb/s"
+        value: "最近1分钟使用下载流量每秒{{ $value }}Mb/s"
+  - alert: "上传网络流量报警"
+    expr: ((sum(rate (node_network_transmit_bytes_total{device!~'tap.*|veth.*|br.*|docker.*|virbr*|lo*'}[1m])) by (instance)) / 60 / 1024 / 2) > 200
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 最近1分钟使用上传流量每秒超过 200Mb/s"
+        value: "最近1分钟使用上传流量每秒{{ $value }}Mb/s"
+ 
+- name: Windows
+  rules:
+  - alert: "-内存报警"
+    expr: 100 - ((windows_os_physical_memory_free_bytes / windows_cs_physical_memory_bytes) * 100) > 60
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 内存资源利用率大于 60%"
+        value: "当前内存占用率{{ $value }}%"
+  - alert: "-CPU报警"
+    expr: 100 - (avg by (instance) (irate(windows_cpu_time_total{mode="idle"}[2m])) * 100) > 30
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} CPU报警资源利用率大于 30%"
+        value: "当前CPU占用率{{ $value }}%"
+  - alert: "-磁盘报警"
+    expr: 100.0 - 100 * ((windows_logical_disk_free_bytes / 1024 / 1024 ) / (windows_logical_disk_size_bytes / 1024 / 1024)) > 85
+    for: 60s
+    labels:
+        severity: warning
+    annotations:
+        description: "{{ $labels.instance }} 磁盘报警资源利用率大于 85%，请及时扩容！"
+        value: "当前磁盘占用率{{ $value }}%"

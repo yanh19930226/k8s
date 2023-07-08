@@ -1,0 +1,57 @@
+1.下载并解压:
+
+wget https://github.com/prometheus/node_exporter/releases/download/v1.5.0/node_exporter-1.5.0.linux-amd64.tar.gz
+
+tar zxvf node_exporter-1.5.0.linux-amd64.tar.gz -C /usr/local
+
+mv /usr/local/node_exporter-1.5.0.linux-amd64/ /usr/local/node_exporter
+
+
+2.查看版本等信息
+
+cd /usr/local/node_exporter
+
+./node_exporter --version
+
+ 3.前台启动
+./node_exporter
+
+4.创建service文件:
+
+vim /usr/lib/systemd/system/node_exporter.service
+
+[Unit]
+Description=node_exporter
+Documentation=https://github.com/prometheus/node_exporter
+After=network.target
+
+[Service]
+Type=simple
+User=root
+ExecStart=/usr/local/node_exporter/node_exporter
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+
+5.使用systemctl方式启动:
+
+systemctl stop node_exporter
+systemctl start node_exporter
+systemctl status node_exporter
+systemctl enable node_exporter
+
+6.验证:
+
+curl localhost:9100/metrics
+
+7.修改prometheus.yml:
+
+vim /usr/local/prometheus/prometheus.yml
+
+- job_name: "test"
+    static_configs:
+      - targets: ["116.62.214.239:9100"]
+
+systemctl restart prometheus
+systemctl status prometheus
+

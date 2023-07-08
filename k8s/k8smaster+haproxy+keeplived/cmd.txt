@@ -1,0 +1,11 @@
+systemctl restart haproxy
+systemctl stop haproxy
+systemctl status haproxy
+
+service keepalived status
+service keepalived restart
+
+keepalived 切换通知：
+1.ubuntu 安装邮件
+apt install bsd-mailx
+2.

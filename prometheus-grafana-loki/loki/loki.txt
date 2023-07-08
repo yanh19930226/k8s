@@ -1,0 +1,142 @@
+1.创建loki服务:
+   wget https://github.com/grafana/loki/releases/download/v2.3.0/loki-linux-amd64.zip
+   
+   unzip loki-linux-amd64.zip
+
+   wget https://raw.githubusercontent.com/grafana/loki/master/cmd/loki/loki-local-config.yaml
+
+   mkdir -p /usr/local/loki
+
+   mkdir -p /usr/local/loki/loki_data
+
+   mv loki-linux-amd64 loki-local-config.yaml /usr/local/loki
+  
+2.优化Loki服务的参数
+   为了避免Loki服务器出现io瓶颈，需要对Loki得参数进行优化
+
+==============code loki-local-config.yaml==============
+auth_enabled: false
+ 
+server:
+  http_listen_port: 3100
+  grpc_listen_port: 9095 #grpc监听端口，默认为9095
+  grpc_server_max_recv_msg_size: 15728640  #grpc最大接收消息值，默认4m
+  grpc_server_max_send_msg_size: 15728640  #grpc最大发送消息值，默认4m
+ 
+ingester:
+  lifecycler:
+    address: 0.0.0.0
+    ring:
+      kvstore:
+        store: inmemory
+      replication_factor: 1
+  chunk_idle_period: 5m
+  chunk_retain_period: 30s
+  max_transfer_retries: 0
+  max_chunk_age: 20m  #一个timeseries块在内存中的最大持续时间。如果timeseries运行的时间超过此时间，则当前块将刷新到存储并创建一个新块
+ 
+schema_config:
+  configs:
+  - from: 2023-01-29
+    store: boltdb
+    object_store: filesystem
+    schema: v11
+    index:
+      prefix: index_
+      period: 168h
+
+storage_config:
+  boltdb:
+    directory: /usr/local/loki/loki_data/index
+ 
+  filesystem:
+    directory: /usr/local/loki/loki_data/chunks
+ 
+limits_config:
+  enforce_metric_name: false
+  reject_old_samples: true
+  reject_old_samples_max_age: 168h
+  ingestion_rate_mb: 30  #修改每用户摄入速率限制，即每秒样本量，默认值为4M
+  ingestion_burst_size_mb: 15  #修改每用户摄入速率限制，即每秒样本量，默认值为6M
+ 
+chunk_store_config:
+  max_look_back_period: 168h   #回看日志行的最大时间，只适用于即时日志
+ 
+table_manager:
+  retention_deletes_enabled: true #日志保留周期开关，默认为false
+  retention_period: 168h  #日志保留周期
+
+ruler:
+  alertmanager_url: http://116.62.214.239:9093
+  # 启用loki rules API
+  enable_alertmanager_v2: true
+  enable_sharding: true
+  enable_api: true
+  # rules临时规则文件存储路径
+  rule_path: /usr/local/loki/temp
+  # rules规则存储
+  # 主要支持本地存储（local）和对象文件系统（azure, gcs, s3, swift）
+  storage:
+    type: local
+    local:
+      directory: /usr/local/loki/rules
+  flush_period: 2s    
+
+
+==============code==============
+
+vim /usr/lib/systemd/system/loki.service 
+  ==============lokiservice============== 
+[Unit]
+Description=loki
+Documentation=https://grafana.com/oss/loki/
+After=network.target
+[Service]
+User=root
+Type=simple
+ExecStart=/usr/local/loki/loki-linux-amd64 --config.file=/usr/local/loki/loki-local-config.yaml &>> /opt/logs/loki-3100.log
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+  ==============lokiservice==============
+3.启动loki服务:
+==========start loki=============
+systemctl daemon-reload
+systemctl enable loki
+systemctl start loki
+
+4.kubernetes集群部署日志采集器:
+  Loki的日志采集器是promtail，相当于prometheus的node-exporter，充当采集器角色。
+  这里的日志采集有几种办法：
+  针对服务器service：可以直接配置service得名字，promtail就能自动采集
+  针对磁盘日志文件：配置日志文件的目录，或者用通配符匹配目录下的日志文件
+  这里因为我们的应用没有输出日志到指定的文件，只能去node节点上的docker日志目录采集
+
+5.loki 配置loki rule:
+
+=========rule==============
+group: 
+- name: service OutOfMemory        
+  rules:
+  - alert: ERROROutOfMemory
+    for: 1m
+    expr: sum by (app, host, level, filename) (count_over_time({env=~"\\w+"} |= "java.lang.OutOfMemoryError" [5m]) > 0)
+    labels:
+      severity: critical
+    annotations:
+      description: '{{$labels.env}} {{$labels.host}} file {{$labels.filename}} has  {{ $value }} error'
+      summary: java.lang.OutOfMemor    
+- name: error-alerting
+  rules:
+  - alert: ERROR
+    expr: count_over_time({app="localapp",level="error"}[5d])>0
+    for: 10s
+    labels:
+      severity: warning
+    annotations:
+      title: "Error Alert"
+      description: "something is logging a lot"
+
+
+
+

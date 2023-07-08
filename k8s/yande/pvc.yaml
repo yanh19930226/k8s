@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: pvc
+spec:
+  accessModes:  #访问模式
+  - ReadWriteOnce
+  resources: #申请资源，8Gi存储空间
+    requests:
+      storage: 2Gi
+  storageClassName: slow #存储类别
+#  selector:
+#    matchLabels:
+#      release: "stable"
+#   matchExpressions:
+#   - {key: environment, operator: In, values: [dev]}

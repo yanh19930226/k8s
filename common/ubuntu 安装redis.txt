@@ -1,0 +1,73 @@
+1.下载:
+
+wget http://download.redis.io/releases/redis-7.0.11.tar.gz
+tar -zxvf redis-7.0.11.tar.gz
+
+mv redis-7.0.11 /usr/local/redis-7.0.11
+
+2. 依赖安装:
+cd /usr/local/redis-7.0.11/
+编译redis
+make
+测试编译是否成功(这一步时间会比较长,测试耗时5分钟左右,忽略)
+make test
+安装
+make install
+
+cd /usr/local/bin
+
+ls -all
+
+
+3.修改配置:
+
+vim /usr/local/redis-7.0.11/redis.conf
+
+# 允许访问的地址，默认是127.0.0.1，会导致只能在本地访问。修改为0.0.0.0则可以在任意IP访问，生产环境不要设置为0.0.0.0
+bind 0.0.0.0
+# 守护进程，修改为yes后即可后台运行
+daemonize yes 
+# 密码，设置后访问Redis必须输入密码
+requirepass yanh
+
+4. 创建系统服务:
+vi /usr/lib/systemd/system/redis.service
+================================
+[Unit]
+Description=redis-server
+After=network.target
+ 
+[Service]
+Type=forking
+ExecStart=/usr/local/bin/redis-server /usr/local/redis-7.0.11/redis.conf
+PrivateTmp=true
+ 
+[Install]
+WantedBy=multi-user.target
+================================
+
+5.命令:
+重载系统服务：
+
+sudo systemctl daemon-reload
+
+#开机自启：
+
+systemctl enable redis
+
+# 启动
+
+systemctl start redis
+# 停止
+
+systemctl stop redis
+# 重启
+
+systemctl restart redis
+# 查看状态
+systemctl status redis
+
+# 查看端口占用
+ps -ef | grep redis
+
+

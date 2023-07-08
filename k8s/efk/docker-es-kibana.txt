@@ -1,0 +1,50 @@
+安装ES拉取ES镜像
+docker pull elasticsearch:7.4.2
+
+挂载数据
+# 创建目录
+mkdir -p /home/es/config
+mkdir -p /home/es/data/
+mkdir -p /home/es/plugins
+
+配置es
+echo "http.host: 0.0.0.0" >> /home/es/config/elasticsearch.yml
+
+修改文件权限
+chmod -R 777 /home/es/config
+chmod -R 777 /home/es/data/
+chmod -R 777  /home/es/plugins
+
+启动ES
+docker run --name elasticsearch \
+-p 9200:9200 -p 9300:9300  \
+-e "discovery.type=single-node" -e ES_JAVA_OPTS="-Xms2000m -Xmx2000m" \
+-v /home/es/config/elasticsearch.yml:/usr/share/elasticsearch/config/elasticsearch.yml  \
+-v /home/es/data/:/usr/share/elasticsearch/data  \
+-v /home/es/plugins:/usr/share/elasticsearch/plugins  \
+-d elasticsearch:7.4.2
+
+安装IK分词插件
+docker exec -it elasticsearch /bin/bash
+./bin/elasticsearch-plugin install  \
+https://github.com/medcl/elasticsearch-analysis-ik/releases/download/v7.4.2/elasticsearch-analysis-ik-7.4.2.zip
+
+获取ES对外的IP
+docker inspect elasticsearch
+
+安装kabana
+docker run --name kibana -e ELASTICSEARCH_HOSTS=http://172.17.0.7:9200 -p 5601:5601 \
+-d kibana:7.4.2
+
+配置Kibana
+docker exec -it kibana /bin/bash
+进入config目录
+cd config
+修改kibana.yml文件
+vi kibana.yml
+elasticsearch.hosts: [ "http://172.17.0.7:9200" ]
+
+参考文章
+https://blog.csdn.net/wxj2722869605/article/details/129321901
+
+

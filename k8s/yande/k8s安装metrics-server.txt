@@ -1,0 +1,27 @@
+下载文件
+wget https://github.com/kubernetes-sigs/metrics-server/releases/latest/download/components.yaml -O metrics-server-components.yaml
+
+替换镜像源地址：
+sed -i 's/k8s.gcr.io\/metrics-server/registry.cn-hangzhou.aliyuncs.com\/google_containers/g' metrics-server-components.yaml
+
+查看是否修改成功
+grep image  metrics-server-components.yaml
+
+修改证书配置添加- --kubelet-insecure-tls
+containers:
+      - args:
+        - --cert-dir=/tmp
+        - --secure-port=4443
+        - --kubelet-preferred-address-types=InternalIP,ExternalIP,Hostname
+        - --kubelet-use-node-status-port
+        - --metric-resolution=15s
+        - --kubelet-insecure-tls
+
+安装
+kubectl apply -f metrics-server-components.yaml
+
+查看pod
+kubectl top pod
+
+查看node
+kubectl top nodes

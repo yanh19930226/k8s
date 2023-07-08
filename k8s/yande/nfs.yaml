@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: pod-nfs
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - mountPath: /usr/share/nginx/html
+      name: nfs
+  volumes:
+  - name: nfs
+    nfs:
+      server: 172.31.0.4
+      path: /nfs/data

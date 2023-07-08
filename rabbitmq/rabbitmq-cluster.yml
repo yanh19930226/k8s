@@ -1,0 +1,121 @@
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-cluster-management
+  namespace: rabbitmq-cluster
+  labels:
+    app: rabbitmq
+spec:
+  ports:
+  - port: 15672
+    name: http
+    nodePort: 30072
+  selector:
+    app: rabbitmq
+  type: NodePort
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: rabbitmq-cluster
+  namespace: rabbitmq-cluster
+  labels:
+    app: rabbitmq
+spec:
+  ports:
+  - port: 5672
+    name: amqp
+  - port: 4369
+    name: epmd
+  - port: 25672
+    name: rabbitmq-dist
+  clusterIP: None
+  selector:
+    app: rabbitmq
+---
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  namespace: rabbitmq-cluster
+  name: rabbitmq-cluster
+spec:
+  serviceName: rabbitmq-cluster
+  replicas: 3
+  selector:
+    matchLabels:
+      app: rabbitmq
+  template:
+    metadata:
+      labels:
+        app: rabbitmq
+    spec:
+      containers:
+      - name: rabbitmq
+        image: rabbitmq:3.7.26-management
+        lifecycle:
+          postStart:
+            exec:
+              command:
+              - /bin/sh
+              - -c
+              - >
+                if [ -z "$(grep rabbitmq-cluster.rabbitmq-cluster.svc.cluster.local /etc/resolv.conf)" ]; then
+                  cp -a /etc/resolv.conf /etc/resolv.conf.bak;
+                  sed "s/^search \([^ ]\+\)/search rabbitmq-cluster.\1 \1/" /etc/resolv.conf > /etc/resolv.conf.new;
+                  cat /etc/resolv.conf.new > /etc/resolv.conf;
+                  rm /etc/resolv.conf.new;
+                fi;
+                until rabbitmqctl node_health_check; do sleep 1; done;
+                if [ -z "$(rabbitmqctl cluster_status | grep rabbitmq-cluster-0)" ]; then
+                  touch /gotit
+                  rabbitmqctl stop_app;
+                  rabbitmqctl reset;
+                  rabbitmqctl join_cluster rabbit@rabbitmq-cluster-0;
+                  rabbitmqctl start_app;
+                else
+                  touch /notget
+                fi;
+        env:
+        - name: MY_POD_NAME
+          valueFrom:
+            fieldRef:
+              fieldPath: metadata.name
+        - name: RABBITMQ_ERLANG_COOKIE
+          value: "YZSDHWMFSMKEMBDHSGGZ"
+        - name: RABBITMQ_NODENAME
+          value: "rabbit@$(MY_POD_NAME)"
+        ports:
+        - name: http
+          protocol: TCP
+          containerPort: 15672
+        - name: amqp
+          protocol: TCP
+          containerPort: 5672
+        livenessProbe:
+          tcpSocket:
+            port: amqp
+          initialDelaySeconds: 5
+          timeoutSeconds: 5
+          periodSeconds: 10
+        readinessProbe:
+          tcpSocket:
+            port: amqp
+          initialDelaySeconds: 15
+          timeoutSeconds: 5
+          periodSeconds: 20
+        volumeMounts:
+        - name: rabbitmq-data
+          mountPath: /var/lib/rabbitmq
+  volumeClaimTemplates:
+  - metadata:
+      name: rabbitmq-data
+      #annotations:
+      #  volume.beta.kubernetes.io/storage-class: "rabbitmq-nfs-storage"
+    spec:
+      storageClassName: "managed-nfs-storage"
+      accessModes:
+        - ReadWriteMany
+      resources:
+        requests:
+          storage: 10Gi

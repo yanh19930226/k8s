@@ -1,0 +1,10 @@
+1.重新生成新的token
+   kubeadm token create --print-join-command
+2.查看token
+   kubeadm token list
+3.获取control-plane证书
+  kubeadm init phase upload-certs --upload-certs
+4.加入主节点示例(第一步生成的新token和第3步生成的certs)
+kubeadm join 10.238.67.100:6443 --token tzmx95.jqu8kp4olv41cwps \   
+ --discovery-token-ca-cert-hash sha256:3f1090762f1e92da82843285d17ff24720632174c5b058c5f114d346e4ebdb6f \ 
+  --control-plane --certificate-key dab8068ca363d20a4ecdd1844aa253fa18642704de587165a21c5f34a12f9eb9

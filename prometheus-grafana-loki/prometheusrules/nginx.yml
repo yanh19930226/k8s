@@ -1,0 +1,11 @@
+groups:
+- name: nginx状态
+  rules:
+  - alert: nginx状态
+    expr: nginx_up == 0
+    for: 1s
+    labels:
+      level: warning
+    annotations:
+      summary: "{{$labels.instance}}:nginx服务停止"
+      description: "nginx服务停止"

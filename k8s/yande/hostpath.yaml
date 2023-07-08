@@ -1,0 +1,17 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+spec:
+  containers:
+  - name: nginx
+    image: nginx:1.7.9
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - name: indexvolume
+      mountPath: /test
+  volumes:
+  - name: indexvolume
+    hostPath:
+      path: /root/data
+      type: DirectoryOrCreate           # type取值较多，可以参见上面的截图

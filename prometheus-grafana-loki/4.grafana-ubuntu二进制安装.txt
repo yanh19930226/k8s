@@ -1,0 +1,38 @@
+1. 下载并安装:
+使用官方APT存储库,下载.deb软件包或下载二进制.tar.gz文件来安装Grafana,这里是通过.deb软件包下载安装的
+安装的版本为grafana-7.0.3:
+
+sudo apt-get install -y apt-transport-https
+sudo apt-get install -y software-properties-common wget
+wget -q -O - https://packages.grafana.com/gpg.key | sudo apt-key add -
+sudo add-apt-repository "deb https://packages.grafana.com/oss/deb stable main"
+sudo apt-get update
+sudo apt-get install grafana
+
+如果在命令 add-apt-repository遇到问题，可以设置存储库:
+echo "deb https://packages.grafana.com/oss/deb stable main" | sudo tee -a /etc/apt/sources.list.d/grafana.list 
+如果需要beta版本添加此存储库:
+echo "deb https://packages.grafana.com/oss/deb beta main" | sudo tee -a /etc/apt/sources.list.d/grafana.list
+
+2. 启动服务器:
+如果安装了APT存储库或.deb软件包，则可以使用systemd启动服务器,启动服务并验证服务已启动:
+
+sudo systemctl daemon-reload
+sudo systemctl start grafana-server
+sudo systemctl status grafana-server
+
+配置Grafana服务器和systemctl启动:
+sudo systemctl enable grafana-server.service
+
+3.Grafana入门:
+ http://localhost:3000/ 。如果未配置其他端口，3000则是Grafana侦听的默认HTTP端口
+默认用户名和密码均为admin。
+
+4.创建dashboard:
+点击 New dashboard.
+点击 Add Query. Grafana使用Random Walk场景创建一个基本的图形面板。
+保存dashboard. 点击 Save dashboard 图标保存
+
+5.导入服务器指标监控模板id ：16098,12385
+
+

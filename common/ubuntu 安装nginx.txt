@@ -1,0 +1,48 @@
+1.依赖安装:
+apt-get update
+apt-get install -y make gcc libpcre3 libpcre3-dev zlib1g-dev openssl libssl-dev
+
+wget https://nginx.org/download/nginx-1.20.2.tar.gz
+tar -zxvf nginx-1.20.2.tar.gz 
+
+2. 配置目录:
+cd nginx-1.20.2/
+--prefix 安装目录
+./configure --prefix=/etc/nginx
+
+3. 编译安装:
+make
+make install
+
+4. 启动nginx:
+/etc/nginx/sbin/nginx
+./nginx 启动  
+./nginx -s stop 快速停止 
+./nginx -s quit 优雅关闭，在退出前完成已经接受的连接请求 
+./nginx -s reload 重新加载配置
+
+5. 创建系统服务:
+vim /usr/lib/systemd/system/nginx.service
+================
+[Unit]
+Description=nginx web server
+After=network-online.target
+[Service]
+Type=forking
+PIDFile=/etc/nginx/logs/nginx.pid
+ExecStartPre=/etc/nginx/sbin/nginx -t -c /etc/nginx/conf/nginx.conf
+ExecStart=/etc/nginx/sbin/nginx -c /etc/nginx/conf/nginx.conf
+ExecReload=/bin/sh -c "/bin/kill -s HUP $(/bin/cat /etc/nginx/logs/nginx.pid)"
+ExecStop=/bin/sh -c "/bin/kill -s QUIT $(/bin/cat /etc/nginx/logs/nginx.pid)"
+PrivateTmp=true
+
+[Install]
+WantedBy=multi-user.target
+================
+
+6.命令:
+systemctl daemon-reload
+systemctl start nginx.service
+systemctl status nginx.service
+systemctl enable nginx.service
+systemctl reload nginx.service

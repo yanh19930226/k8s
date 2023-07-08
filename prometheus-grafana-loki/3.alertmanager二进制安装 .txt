@@ -1,0 +1,168 @@
+1.下载:
+
+wget https://github.com/prometheus/alertmanager/releases/download/v0.25.0/alertmanager-0.25.0.linux-amd64.tar.gz
+tar -xf alertmanager-0.25.0.linux-amd64.tar.gz -C /usr/local/
+mv /usr/local/alertmanager-0.25.0.linux-amd64/ /usr/local/alertmanager
+cd /usr/local/alertmanager/
+
+=============查看帮助=============
+./alertmanager -h
+=============直接启动=============
+./alertmanager
+=============alertmanager.默认端口9093=============
+
+=============alertmanager页面访问：ip:9093=============
+
+2.准备service文件:
+vim /usr/lib/systemd/system/alertmanager.service
+
+===========================================
+[Unit]
+Description=Prometheus Alertmanager
+After=network.target
+
+[Service]
+ExecStart=/usr/local/alertmanager/alertmanager --config.file="/usr/local/alertmanager/alertmanager.yml"
+
+[Install]
+WantedBy=multi-user.target
+===========================================
+
+3.相关命令:
+
+systemctl daemon-reload
+systemctl start alertmanager.service
+systemctl status alertmanager.service
+systemctl enable alertmanager.service
+
+4..修改Prometheus-Alertmanager配置:
+
+=============修改prometheus.yml:vi prometheus.yml=============
+# my global config
+global:
+  scrape_interval: 15s # Set the scrape interval to every 15 seconds. Default is every 1 minute.
+  evaluation_interval: 15s # Evaluate rules every 15 seconds. The default is every 1 minute.
+  # scrape_timeout is set to the global default (10s).
+
+# Alertmanager configuration
+alerting:
+  alertmanagers:
+    - static_configs:
+        - targets:
+          - 116.62.214.239:9093
+
+# Load rules once and periodically evaluate them according to the global 'evaluation_interval'.
+rule_files:
+   - "rules/*.yml"
+  # - "first_rules.yml"
+  # - "second_rules.yml"
+
+# A scrape configuration containing exactly one endpoint to scrape:
+# Here it's Prometheus itself.
+scrape_configs:
+  # The job name is added as a label `job=<job_name>` to any timeseries scraped from this config.
+  - job_name: "prometheus"
+
+    # metrics_path defaults to '/metrics'
+    # scheme defaults to 'http'.
+
+    static_configs:
+      - targets: ["localhost:9090"]
+
+=============修改prometheus.yml:vi prometheus.yml=============
+=============重启prometheus服务=============
+systemctl restart prometheus
+systemctl status prometheus
+=============重启prometheus服务=============
+
+
+=============配置alertmanager.yml=================
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 5s       #在组内等待所配置的时间，如果同组内，30秒内出现相同报警，在一个组内出现
+  group_interval: 5s   #如果组内内容不变化，合并为一条警报信息，5m后发送
+  repeat_interval: 5s   #发送报警间隔，如果指定时间内没有修复，则重新发送报警
+  receiver: 'dd'
+receivers:
+- name: 'dd'
+  webhook_configs:
+  - url: 'http://116.62.214.239:8060/dingtalk/webhook/send'
+    send_resolved: true     # 表示服务恢复后会收到恢复告警
+
+=============检测配置是否正确=================
+./amtool check-config alertmanager.yml
+
+
+
+
+
+
+7.配置钉钉告警:
+
+wget https://github.com/timonwong/prometheus-webhook-dingtalk/releases/download/v2.0.0/prometheus-webhook-dingtalk-2.0.0.linux-amd64.tar.gz
+ tar xf prometheus-webhook-dingtalk-2.0.0.linux-amd64.tar.gz -C /usr/local/
+mv /usr/local/prometheus-webhook-dingtalk-2.0.0.linux-amd64/ /usr/local/prometheus-webhook-dingtalk
+
+
+vim /usr/lib/systemd/system/webhook-dingtalk.service
+
+=================配置dingtalkService===================
+[[Unit]
+Descripton=dingtalk
+Documentation=https://github.com/timonwong/prometheus-webhook-dingtalk/
+After=network.target
+
+[Service]
+Restart=on-failure
+WorkingDirectory=/usr/local/prometheus-webhook-dingtalk
+ExecStart=/usr/local/prometheus-webhook-dingtalk/prometheus-webhook-dingtalk --config.file=/usr/local/prometheus-webhook-dingtalk/config.yml
+
+[Install]
+WantedBy=multi-user.target
+
+=================配置dingtalkService===================
+
+================启动命令========================
+systemctl daemon-reload
+systemctl restart webhook-dingtalk.service
+systemctl status webhook-dingtalk.service
+systemctl enable webhook-dingtalk.service
+netstat -lntp | grep 8060
+================启动命令========================
+
+
+================config.yml=======================
+
+## Request timeout
+timeout: 5s
+
+## Customizable templates path
+templates:
+  - contrib/templates/legacy/template.tmpl
+
+## You can also override default template using `default_message`
+## The following example to use the 'legacy' template from v0.3.0
+default_message:
+  title: '{{ template "legacy.title" . }}'
+  text: '{{ template "legacy.content" . }}'
+
+## Targets, previously was known as "profiles"
+targets:
+  webhook:
+    url: https://oapi.dingtalk.com/robot/send?access_token=336005574e57fde15b534207985fd40cb541b16f844971c23641899ef6c552c9
+    # secret for signature
+    secret: SECf607af69b83d7d6a0bc1668ff6154431e8f2f2a3fa892076bf94ce67ed5fceba
+  webhook_mention_all:
+    url: https://oapi.dingtalk.com/robot/send?access_token=336005574e57fde15b534207985fd40cb541b16f844971c23641899ef6c552c9
+    secret: SECf607af69b83d7d6a0bc1668ff6154431e8f2f2a3fa892076bf94ce67ed5fceba
+    mention:
+      all: true
+  webhook_mention_users:
+    url: https://oapi.dingtalk.com/robot/send?access_token=336005574e57fde15b534207985fd40cb541b16f844971c23641899ef6c552c9
+    mention:
+      mobiles: ['18650482503']
+================config.yml=======================
+

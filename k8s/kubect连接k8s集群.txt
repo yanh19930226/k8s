@@ -1,0 +1,18 @@
+1.下载
+
+wget -c https://dl.k8s.io/release/$(curl -L -s https://dl.k8s.io/release/stable.txt)/bin/linux/amd64/kubectl
+chmod a+x kubectl
+mv kubectl /usr/bin/
+mkdir -p /root/.kube/
+
+2.vim /root/.kube/config
+   配置/root/.kube/config文件
+
+3.测试
+   chmod g-r /root/.kube/config
+   chmod o-r /root/.kube/config
+
+   kubectl get nodes
+
+4.文章：https://blog.csdn.net/oToyix/article/details/125527622
+

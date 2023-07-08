@@ -1,0 +1,27 @@
+k8s初始化命令示例:
+kubeadm init --control-plane-endpoint="yande.org" \
+                 --kubernetes-version=v1.23.5  \
+                 --pod-network-cidr=192.168.0.0/16 \
+                 --service-cidr=10.96.0.0/16 \
+                 --token-ttl=0 \
+                 --image-repository registry.aliyuncs.com/google_containers \
+                 --upload-certs
+1、在master节点执行下面reset命令：
+kubeadm reset
+2、手动清除配置信息，这一步很关键
+rm -rf /root/.kube
+rm -rf /etc/cni/net.d
+yum install -y ipvsadm
+ipvsadm -C
+iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X
+
+
+
+1、重置工作节点
+kubeadm reset
+2、手动删除目录
+rm -rf /root/.kube
+rm -rf /etc/cni/net.d
+rm -rf /etc/kubernetes/*
+ipvsadm -C
+iptables -F && iptables -t nat -F && iptables -t mangle -F && iptables -X

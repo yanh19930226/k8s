@@ -1,0 +1,14 @@
+apiVersion: v1
+kind: PersistentVolume
+metadata:
+  name: pv1
+spec:
+  capacity:  #容量
+    storage: 5Gi
+  accessModes:  #访问模式
+  - ReadWriteOnce
+  persistentVolumeReclaimPolicy: Recycle  #回收策略
+  storageClassName: slow  
+  nfs:
+    path: /nfs/data/pvtest
+    server: 172.31.0.4

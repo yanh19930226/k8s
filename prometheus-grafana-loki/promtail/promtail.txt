@@ -1,0 +1,15 @@
+1.使用helm的方式部署promtail：
+helm repo add loki https://grafana.github.io/helm-charts
+helm repo update
+helm pull grafana/promtail
+
+打开values.yaml，如果不希望部署到master节点上可以把这几行注释掉
+#tolerations:
+#  - key: node-role.kubernetes.io/master
+#    operator: Exists
+#    effect: NoSchedule
+
+修改loki的地址，可以改成ip+端口或者域名+端口
+
+
+

@@ -1,0 +1,58 @@
+1.下载:
+wget https://github.com/oliver006/redis_exporter/releases/download/v1.6.1/redis_exporter-v1.6.1.linux-amd64.tar.gz
+2.解压:
+tar -zxf redis_exporter-v1.6.1.linux-amd64.tar.gz  -C /usr/local/
+3.改名
+mv /usr/local/redis_exporter-v1.6.1.linux-amd64/ /usr/local/redis_exporter
+
+4.查看参数
+
+cd /usr/local/redis_exporter
+./redis_exporter -help //查看参数
+
+5.创建启动文件
+
+vim /usr/lib/systemd/system/redis_exporter.service
+
+===================================
+
+[Unit]
+Description=redis_exporter
+Documentation=https://github.com/oliver006/redis_exporter
+After=network.target
+[Service]
+Type=simple
+ExecStart=/usr/local/redis_exporter/redis_exporter -redis.addr 8.130.109.62:6379  -redis.password yanh
+Restart=on-failure
+[Install]
+WantedBy=multi-user.target
+
+====================================
+
+6.命令:
+
+systemctl daemon-reload
+systemctl start redis_exporter
+systemctl status redis_exporter
+systemctl enable redis_exporter
+ss -tln | grep 9121
+
+6.修改prometheus.yml：
+
+- job_name: 'redis'
+    scrape_interval: 10s
+    static_configs:
+      - targets: ['8.130.109.62:9121']
+
+$ systemctl restart prometheus
+或者热加载
+$ curl  -X POST localhost:9090/-/reload
+
+7.添加Grafana模板:
+模板地址为：https://grafana.com/grafana/dashboards/881-redis-server-metrics/
+
+
+
+
+
+

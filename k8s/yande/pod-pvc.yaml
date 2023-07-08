@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx-nfs-pvc
+spec:
+  volumes:
+  - name: nginx-nfs-pvc
+    persistentVolumeClaim:
+      claimName: pvc         
+  containers:
+  - name: nginx-nfs-pvc
+    image: nginx:1.7.9
+    imagePullPolicy: IfNotPresent
+    volumeMounts:
+    - name: nginx-nfs-pvc
+      mountPath: /usr/share/nginx/html

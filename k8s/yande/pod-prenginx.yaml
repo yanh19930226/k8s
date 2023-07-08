@@ -1,0 +1,63 @@
+apiVersion: v1
+kind: Pod
+metadata:
+  name: nginx
+  labels:
+      type: app
+      version: 1.0.0
+  namespace: default
+spec:
+  containers:
+  - image: nginx:1.17.9
+    name: nginx
+    imagePullPolicy: IfNotPresent
+    workingDir: "/usr/share/nginx/html"
+    lifecycle:
+       postStart: 
+          exec:
+             command:
+             - sh
+             - -c
+             - "echo 'text' > /usr/share/nginx/html/pre.html"
+       preStop:
+          exec:
+             command:
+              - sh 
+              - -c
+              - "sleep 50; echo 'stop' >> /usr/share/nginx/html/pre.html"
+    startupProbe:
+       httpGet:
+         path: /index.html
+         port: 80
+       failureThreshold: 3
+       periodSeconds: 10
+       successThreshold: 1
+       timeoutSeconds: 5
+    livenessProbe:
+       httpGet:
+         path: /index.html
+         port: 80
+       failureThreshold: 3
+       periodSeconds: 10
+       successThreshold: 1
+       timeoutSeconds: 5
+    readinessProbe:
+       httpGet:
+         path: /index.html
+         port: 80
+       failureThreshold: 3
+       periodSeconds: 10
+       successThreshold: 1
+       timeoutSeconds: 5
+    ports:
+    - name: nginx-port
+      containerPort: 80
+      protocol: TCP
+    resources:
+      requests:
+        cpu: 100m
+        memory: 200Mi
+      limits:
+        cpu: 100m
+        memory: 200Mi
+  restartPolicy: OnFailure

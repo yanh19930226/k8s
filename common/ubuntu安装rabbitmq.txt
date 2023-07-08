@@ -1,0 +1,32 @@
+1.由于rabbitMq需要erlang语言的支持，在安装rabbitMq之前需要安装erlang，执行命令：
+sudo apt-get install erlang-nox # 安装erlang
+erl # 查看relang语言版本，成功执行则说明relang安装成功
+2.添加公钥
+wget -O- https://www.rabbitmq.com/rabbitmq-release-signing-key.asc | sudo apt-key add -
+3.更新软件包
+sudo apt-get update
+4.安装 RabbitMQ
+sudo apt-get install rabbitmq-server #安装成功自动启动
+5.查看 RabbitMq状态
+systemctl status rabbitmq-server #Active: active (running) 说明处于运行状态
+6.启动、停止、重启
+sudo service rabbitmq-server start # 启动
+sudo service rabbitmq-server stop # 停止
+sudo service rabbitmq-server restart # 重启
+7.放行防火墙，RabbitMQ使用5672、15672、25672 3个端口
+# 方式1（推荐），关闭防火墙
+systemctl stop firewalld # 关闭
+systemctl disable firewalld # 关闭开机自启
+# 方式2，放行5672 25672端口
+firewall-cmd --add-port=5672/tcp --permanent # 放行tcp规则下的5672端口，永久生效
+firewall-cmd --add-port=15672/tcp --permanent # 放行tcp规则下的15672端口，永久生效
+firewall-cmd --add-port=25672/tcp --permanent # 放行tcp规则下的25672端口，永久生效
+firewall-cmd --reload
+8.启用 web端可视化操作界面，我们还需要配置Management Plugin插件
+sudo rabbitmq-plugins enable rabbitmq_management # 启用插件
+sudo service rabbitmq-server restart # 重启
+9.添加admin用户，并赋予权限
+sudo rabbitmqctl add_user admin admin
+sudo rabbitmqctl set_user_tags admin administrator
+sudo rabbitmqctl set_permissions -p / admin ".*" ".*" ".*"
+10.浏览器打开管理控制台 http://192.168.88.130:15672

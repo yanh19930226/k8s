@@ -1,0 +1,56 @@
+groups:
+- name: MySQL
+  rules:
+  - alert: MySQL服务不可用
+    expr: mysql_up == 0
+    for: 10s
+    labels:
+      level: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} MySQL is down"
+      description: "MySQL database is down. This requires immediate action!"
+      
+  - alert: MysqlQPS
+    expr: rate(mysql_global_status_questions[5m]) > 500 
+    for: 2m
+    labels:
+      level: warning
+    annotations:
+      summary: "{{$labels.instance}}: Mysql_High_QPS detected"
+      description: "{{$labels.instance}}: Mysql opreation is more than 500 per second ,(current value is: {{ $value }})" 
+      
+  - alert: Mysql连接数
+    expr: rate(mysql_global_status_threads_connected[5m]) > 200
+    for: 2m
+    labels:
+      level: warning
+    annotations:
+      summary: "{{$labels.instance}}: Mysql Too Many Connections detected"
+      description: "{{$labels.instance}}: Mysql Connections is more than 200 per second ,(current value is: {{ $value }})"
+      
+  - alert: Mysql慢查询数量
+    expr: rate(mysql_global_status_slow_queries[5m]) > 3
+    for: 2m
+    labels:
+      level: warning
+    annotations:
+      summary: "{{$labels.instance}}: Mysql_Too_Many_slow_queries detected"     
+      description: "{{$labels.instance}}: Mysql slow_queries is more than 3 per second ,(current value is: {{ $value }})"
+      
+  - alert: Mysql主从复制线程 
+    expr: mysql_slave_status_slave_sql_running == 0
+    for: 1m
+    labels:
+      level: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} SQL thread stopped"     
+      description: "SQL thread has stopped. This is usually because it cannot apply a SQL statement received from the master."
+      
+  - alert: Mysql主从延迟
+    expr: rate(mysql_slave_status_seconds_behind_master[5m]) >30 
+    for: 1m
+    labels:
+      level: warning 
+    annotations:
+      summary: "Instance {{ $labels.instance }} Slave lagging behind Master"
+      description: "Slave is lagging behind Master. Please check if Slave threads are running and if there are some performance issues!"

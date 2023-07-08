@@ -1,0 +1,5 @@
+deployment创建自动伸缩命令
+kubectl autoscale deployment nginx --max=5 --min=2 --cpu-percent=80
+
+测试命令
+while true; do wget -q -O- http://10.97.32.27; done

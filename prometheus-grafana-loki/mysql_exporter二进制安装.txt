@@ -1,0 +1,62 @@
+1. 安装mysql_exporter:
+prometheus监控MySQL需要用到mysql_exporter
+mysql_exporter 项目地址：https://github.com/prometheus/mysqld_exporter
+注意：mysql_exporter可以部署在这两台主机任一一台上，只不过需要注意的是，在配置prometheus.yml添加监控目标的时候，注意填写对应ip即可。
+
+ wget https://github.com/prometheus/mysqld_exporter/releases/download/v0.14.0/mysqld_exporter-0.14.0.linux-amd64.tar.gz
+ tar xf mysqld_exporter-0.14.0.linux-amd64.tar.gz -C /usr/local
+ mv /usr/local/mysqld_exporter-0.14.0.linux-amd64/ /usr/local/mysqld_exporter
+
+2. mysql授权连接:
+
+=======================
+ mysql -uroot -p1234567890Yh!
+
+ create user 'exporter'@'%' identified by '1234567890Yh!';
+ 
+ grant process,replication client,select on *.* to 'exporter'@'%';
+ 
+ flush privileges;
+=======================
+
+3.创建配置信息文件:
+ vim /usr/local/mysqld_exporter/.my.cnf
+#添加如下内容
+[client]
+
+user=exporter
+
+password=1234567890Yh!
+
+4.普通启动:
+
+./mysqld_exporter --config.my-cnf=/usr/local/mysqld_exporter/.my.cnf
+
+5.创建exporter systemd文件:
+
+ vim /usr/lib/systemd/system/mysqld_exporter.service
+
+========================
+[Unit]
+Description=mysqld_exporter
+After=network.target
+
+[Service]
+Type=simple
+ExecStart=/usr/local/mysqld_exporter/mysqld_exporter --config.my-cnf=/usr/local/mysqld_exporter/.my.cnf
+Restart=on-failure
+
+[Install]
+WantedBy=multi-user.target
+========================
+
+
+ systemctl daemon-reload
+ systemctl stop mysqld_exporter
+ systemctl enable mysqld_exporter
+ systemctl start mysqld_exporter
+ systemctl status mysqld_exporter
+ ss -tln | grep 9104
+
+访问地址：http://116.62.214.239:9104/metrics
+

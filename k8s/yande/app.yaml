@@ -1,0 +1,151 @@
+groups:
+- name: redis集群预警
+  rules:
+  - alert: "redis节点下线"
+    expr: up{instance=~".*:9121"} == 0
+    for: 20s
+    labels:
+      severity: ERROR
+      alert_type: "节点下线通知"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }} redis 监控主节点下线, 请及时处理 命令: systemctl restart|status redis-exporter"
+
+  - alert: "redis节点下线"
+    expr: redis_up{instance=~"redis:.*"} == 0
+    for: 20s
+    labels:
+      severity: WARN
+      alert_type: "节点下线通知"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "{{ $labels.instance }} 节点下线, 请及时处理"
+
+  - alert: "redis集群节点丢失"
+    expr: time() - redis_rdb_last_save_timestamp_seconds > 60 * 60 * 24
+    for: 5m
+    labels:
+      severity: ERROR
+    annotations:
+      summary: "Missing backup (instance {{ $labels.instance }})"
+      description: "redis 集群节点： {{$labels.instance}}  已下线24小时, 请立即处理"  
+
+  - alert: "内存使用大于95%"
+    expr: redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 95
+    for: 5m
+    labels:
+      severity: WARN
+    annotations:
+      description: "Redis 当前节点 {{ $labels.instance }} 内存已使用 {{ $value }}%"
+
+  - alert: "内存异常"
+    expr: redis_mem_fragmentation_ratio < 1
+    for: 5m
+    labels:
+      severity: WARN
+    annotations:
+      description: "Redis 当前节点 {{ $labels.instance }} redis内存可用内存不足,请减少key或增加内存"
+
+  - alert: "内存异常"
+    expr: redis_mem_fragmentation_ratio > 18
+    for: 5m
+    labels:
+      severity: ERROR
+    annotations:
+      description: "Redis 当前节点 {{ $labels.instance }} 内存碎片过大, 当前: {{ $value}}, 处理"
+
+  - alert: "redis连接被拒绝"
+    expr: increase(redis_rejected_connections_total[1m]) > 0
+    for: 5m
+    labels:
+      severity: WARN
+      alert_type: "连接被拒绝"
+    annotations:
+      description: "redis 一些服务连接 {{ $labels.instance }} 被拒绝: 查看文档"
+
+  - alert: "redis主节点缺失"
+    expr: count(redis_instance_info{role="master"}) == 0
+    for: 5m
+    labels:
+      severity: WARN
+      alert_type: "redis主节点缺失"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      summary: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }} redis主节点缺失"
+      description: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }} 主节点丢失5分钟"
+
+  - alert: "redis副本下线"
+    expr: delta(redis_connected_slaves[1m]) < 0
+    for: 5m
+    labels:
+      severity: WARN
+      alert_type: "数据不同步"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "redis {{ $labels.instance}} 集群副本下线, 请立即处理"
+  
+  - alert: "redis连接数过多"
+    expr: redis_connected_clients{instance=~"redis://.*"} > redis_config_maxclients{instance=~"redis://.*"} * 0.85
+    for: 5m
+    labels:
+      severity: WARN
+      alert_type: "连接数过多"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "主机: {{ $labels.instance }} 当前连接数： {{ $value }}， 连接总数达到总量的85%，请立即检查"
+
+  - alert: "redis连接数过多"
+    expr: redis_connected_clients{instance=~"redis://.*"} > redis_config_maxclients{instance=~"redis://.*"} * 0.95
+    for: 5m
+    labels:
+      severity: ERROR
+      alert_type: "连接数过多"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "主机: {{ $labels.instance }} 当前连接数： {{ $value }}， 连接总数达到总量的95%，请立即检查"
+
+  - alert: "redis 连接数过低"
+    expr: redis_connected_clients == 0
+    for: 5m
+    labels:
+      severity: WARN
+      alert_type: "连接数过低"
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "当前: {{ $labels.instance }} 无连接， 请检查下服务是否下线了"
+
+  - alert: "redis连接故障"
+    expr: irate(redis_blocked_clients{job="redis_exporter_targets"}[5m]) > 3
+    for: 5m
+    labels:
+      severity: WARN
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "当前: {{ $labels.alert_host }} 5分钟内阻塞进程大于 3, 请检查连接服务是否异常"
+
+  - alert: "redis低命中率效率低下"
+    expr: redis_keyspace_hits_total / (redis_keyspace_hits_total + redis_keyspace_misses_total) > 0.95
+    for: 5m
+    labels:
+      severity: ERROR
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "当前: {{ $labels.alert_host }} 命中率低下原因： 数据到期和分配给Redis的内存不足，请及时检查内存、数据"
+
+  - alert: "redis异常同步"
+    expr: irate(redis_rdb_changes_since_last_save[60m])
+    for: 60m
+    labels:
+      severity: ERROR
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "当前: {{ $labels.alert_host }} redis 某一台服务异常断开, 同步异常"
+
+  - alert: "redis集群连接异常"
+    expr: redis_master_link_up{master_host=~".*"} == 0
+    for: 5m
+    labels:
+      severity: WARN
+      alert_host: "{{ reReplaceAll \":(.*)\" \"\" $labels.instance }}"
+    annotations:
+      description: "当前: {{ $labels.alert_host }} redis 复制连接当前断开"

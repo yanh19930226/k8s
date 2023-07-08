@@ -1,0 +1,65 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  labels:
+    app: nginx-dep
+  name: nginx-dep
+spec:
+  revisionHistoryLimit: 10
+  replicas: 1
+  selector:
+    matchLabels:
+      app: nginx-dep
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app: nginx-dep
+    spec:
+      affinity:
+        nodeAffinity:
+          requiredDuringSchedulingIgnoredDuringExecution:
+            nodeSelectorTerms:
+            - matchExpressions:
+              - key: kubernetes.io/os
+                operator: In
+                values:
+                - linux
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 1
+            preference:
+              matchExpressions:
+              - key: label-1
+                operator: In
+                values:
+                - key-1
+          - weight: 50
+            preference:
+              matchExpressions:
+              - key: label-2
+                operator: In
+                values:
+                - key-2
+      tolerations:
+      - key: "key1"
+        operator: "Equal"
+        value: "value1"
+        effect: "NoSchedule"
+      containers:
+      - name: nginx
+        imagePullPolicy: IfNotPresent
+        image:  nginx:1.7.9
+        resources:
+          requests:
+            cpu: 10m
+            memory: 120Mi
+          limits:
+            cpu: 20m
+            memory: 155Mi
+        ports:
+        - containerPort: 80
+      restartPolicy: Always

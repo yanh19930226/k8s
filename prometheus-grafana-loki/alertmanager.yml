@@ -1,0 +1,22 @@
+global:
+  resolve_timeout: 5m
+
+route:
+  group_by: ['alertname']
+  group_wait: 5s       #在组内等待所配置的时间，如果同组内，30秒内出现相同报警，在一个组内出现
+  group_interval: 5s   #如果组内内容不变化，合并为一条警报信息，5m后发送
+  repeat_interval: 5s   #发送报警间隔，如果指定时间内没有修复，则重新发送报警
+  receiver: 'dd'
+receivers:
+- name: 'dd'
+  webhook_configs:
+  - url: 'http://116.62.214.239:8060/dingtalk/webhook/send'
+    send_resolved: true     # 表示服务恢复后会收到恢复告警
+#inhibit_rules:
+#  - source_match:		#配置了仰制告警，什么意思=自行百度
+#      alertname: '.*'
+#      severity: '非常严重'
+#    target_match:
+      #severity: '.*'
+#      severity: '严重'
+#    equal: ['alertname',"target","job","instance"]

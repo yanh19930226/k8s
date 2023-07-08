@@ -1,0 +1,60 @@
+groups:
+- name: Redis状态
+  rules:
+  - alert: Redis状态
+    expr: redis_up == 0
+    for: 2s
+    labels:
+      level: critical
+    annotations:
+      summary: "Instance {{ $labels.instance }} Redis服务停止"
+      description: "Redis服务停止"
+
+  - alert: 内存不足
+    expr: redis_memory_used_bytes / redis_total_system_memory_bytes * 100 > 90
+    for: 2m
+    labels:
+      level: warning
+    annotations:
+      summary: "{{ $labels.instance }}系统内存不足"
+      description: "Redis占用系统内存(> 90%)\n  当前值 = {{ printf \"%.2f\" $value }}%"
+
+  - alert: Maxmemory不足
+    expr: redis_config_maxmemory !=0 and redis_memory_used_bytes / redis_memory_max_bytes * 100 > 80
+    for: 2m
+    labels:
+      level: warning
+    annotations:
+      summary: "{{ $labels.instance }} Maxmemory设置太小"
+      description: "超出设置最大内存(> 80%)\n  当前值 = {{ printf \"%.2f\" $value }}%"
+
+  - alert: 连接数太多
+    expr: redis_connected_clients > 200
+    for: 2m
+    labels:
+      level: warning
+    annotations:
+      summary: "{{ $labels.instance }} 实时连接数太多"
+      description: "连接数太多（>200）\n  当前值 = {{ $value }}"
+
+  - alert: 拒绝连接数
+    expr: increase(redis_rejected_connections_total[1m]) > 0
+    for: 0m
+    labels:
+      level: critical
+    annotations:
+      summary: "{{ $labels.instance }} 拒绝连接"
+      description: "Redis有拒绝连接，请检查连接数配置\n  当前值 = {{ printf \"%.0f\" $value }}"
+
+  - alert: 执行命令数大于1000
+    expr: rate(redis_commands_processed_total[1m])  > 1000
+    for: 0m
+    labels:
+      level: critical
+    annotations:
+      summary: "{{ $labels.instance }} 执行命令次数太多"
+      description: "Redis执行命令次数太多\n  当前值 = {{ printf \"%.0f\" $value }}"  
+    
+
+
+ 
